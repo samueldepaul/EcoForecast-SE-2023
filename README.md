@@ -1,7 +1,11 @@
 <p align="center">
   <img src="https://github.com/samueldepaul/EcoForecast-SE-2023/blob/main/imgs/1.jpg?raw=true"/>
 </p>
+From November 18th to 21st, 2023, the Schneider Electric Hackathon 2023 hosted by NUWE has taken place. I specifically participated in the Data Science challenge, where several teams tackled the same issue:
 
+Given a set of data relative to the energy consumption of 9 European countries and their generation of renewable or 'green' energies, the goal was to predict, for each hour, which country would have the highest surplus of green energy in the next hour.
+
+Below, you'll find my solution to the proposed problem. I hope you find it engaging and recognize the huge effort I've put in over the past few days.
 <p align="center">
   <img src="https://github.com/samueldepaul/EcoForecast-SE-2023/blob/main/imgs/2.jpg?raw=true"/>
 </p>

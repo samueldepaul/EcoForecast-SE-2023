@@ -12,6 +12,10 @@ Given data on the energy consumption of 9 European countries and their generatio
 
 Explore my solution to this challenge below. I hope you find it engaging and recognize the considerable effort I've invested over the past few days.
 
+<p align="center">
+  <img src="https://github.com/samueldepaul/EcoForecast-SE-2023/blob/main/imgs/3.jpg?raw=true"/>
+</p>
+
 The problem was tackled by building a robust pipeline composed of the following stages:
 - Data Ingestion
 - Data Processing
@@ -33,10 +37,6 @@ Let's delve into a general overview of each phase:
   - Feature engineering was conducted, considering variables with lags of 1, 2, 3, and 24 hours, monthly and daily grouped variables, and trigonometric transformations (sin, cos) of the date.
   - Before proceeding to computationally intensive tasks like feature selection or model training, a memory reduction of the dataset was executed by efficiently managing data types, resulting in a 66% size reduction.
   - Finally, the 25 most relevant features were selected through a process based on model feature importance, specifically leveraging 5 iterations of feature_importance from LGBM and XGBoost models.
-
-<p align="center">
-  <img src="https://github.com/samueldepaul/EcoForecast-SE-2023/blob/main/imgs/3.jpg?raw=true"/>
-</p>
 
 <p align="center">
   <img src="https://github.com/samueldepaul/EcoForecast-SE-2023/blob/main/imgs/4.jpg?raw=true"/>

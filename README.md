@@ -55,3 +55,15 @@ Let's delve into a general overview of each phase:
   <img src="https://github.com/samueldepaul/EcoForecast-SE-2023/blob/main/imgs/4.jpg?raw=true"/>
 </p>
 
+#### Code Structure and Data Cleaning:
+  - The code is written with a focus on efficiency, ease of maintenance, and recyclability for future projects. Functions created are extensively documented and commented for good readability, ensuring anyone can understand their functionality. Moreover, warnings are generated throughout the code to provide users with insights into potential issues in their data or models.
+  
+  - When cleaning the data, the decision was made to exclude UK data for several reasons:
+    - As a consequence of the terms of the post-Brexit Trade and Cooperation Agreement (TCA) between the UK and the EU, there is no longer any obligation for GB to publish information on the Transparency Platform. This results in a significant amount of missing information.
+    - The amount of missing data was so substantial that any effort to fill it was unfeasible.
+    - The available UK data was too low to be plausible. According to the data, the UK has by far the lowest energy consumption among the 9 considered countries, even below countries with much smaller land areas and populations, such as Denmark.
+    - The missing data significantly affected the dataset, making it very confusing to calculate the test set. Without a test set, evaluating the solutions we built was impossible.
+
+  - Trigonometric transformations of time variables (hour, day, month) were applied during feature engineering to better capture their cyclical nature.
+  - In the generation of daily or monthly aggregated data, utmost care was taken to avoid data leakage. Under no circumstances did we use future information to calculate values of the current observation. Aggregated variables such as average monthly consumption should be interpreted as the average monthly consumption UP TO THE DATE.
+

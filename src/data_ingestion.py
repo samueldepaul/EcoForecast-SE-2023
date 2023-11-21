@@ -5,8 +5,7 @@ from utils import perform_get_request, xml_to_load_dataframe, xml_to_gen_data
 import time
 
 def get_load_data_from_entsoe(regions, periodStart='202302240000', periodEnd='202303240000', output_path='./data'):
-    
-    # TODO: There is a period range limit of 1 year for this API. Process in 1 year chunks if needed
+    print("\nLOAD DATA")
     
     # URL of the RESTful API
     url = 'https://web-api.tp.entsoe.eu/api'
@@ -39,8 +38,7 @@ def get_load_data_from_entsoe(regions, periodStart='202302240000', periodEnd='20
     return
 
 def get_gen_data_from_entsoe(regions, renewable, periodStart='202202240000', periodEnd='202303240000', output_path='./data'):
-    
-    # TODO: There is a period range limit of 1 day for this API. Process in 1 day chunks if needed
+    print("\nGEN_DATA")
 
     # URL of the RESTful API
     url = 'https://web-api.tp.entsoe.eu/api'

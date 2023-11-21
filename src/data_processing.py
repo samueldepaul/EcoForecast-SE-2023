@@ -7,146 +7,246 @@ import lightgbm as lgb
 import xgboost as xgb
 from sklearn.model_selection import train_test_split, KFold
 
+
+
 def create_meta_df(file_path):
+    """
+    Create a metadata DataFrame containing information about datasets.
+
+    Args:
+    - file_path (str): Path to the directory containing CSV files.
+
+    Returns:
+    - meta_df (pd.DataFrame): DataFrame with dataset information.
+    """
     print("\nGenerating Table with dataset info for diagnostic...")
-    files = [file for file in os.listdir(file_path) if (file.endswith('.csv') and not 'test' in file and not 'train' in file)]
-    meta_df = pd.DataFrame(columns=["file", "region", "interval", "units", "first_obs", "last_obs", "nans"])
+    # Filter files by criteria and create a list of relevant files
+    files = [file for file in os.listdir(file_path) if file.endswith('.csv') and 'test' not in file and 'train' not in file]
+    
+    # Define columns for metadata DataFrame
+    columns = ["file", "region", "interval", "units", "first_obs", "last_obs", "nans"]
+    meta_df = pd.DataFrame(columns=columns)
 
-    for i in range(len(files)):
-        df_aux = pd.read_csv(os.path.join(file_path, files[i]))
+    for file in files:
+        file_path_full = os.path.join(file_path, file)
+        df_aux = pd.read_csv(file_path_full)
 
-        # Expresión regular para extraer la fecha y hora
+        # Regular expression to extract date and time
         regex = r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})'
+        # Extract relevant part and convert to date and time
+        df_aux['StartTime'] = pd.to_datetime(df_aux['StartTime'].str.extract(regex)[0], format='%Y-%m-%dT%H:%M')
 
-        # Aplicar la expresión regular para extraer la parte relevante y convertirla a fecha y hora
-        df_aux['StartTime'] = df_aux['StartTime'].str.extract(regex)
-        df_aux['StartTime'] = pd.to_datetime(df_aux['StartTime'], format='%Y-%m-%dT%H:%M')
+        # Calculate interval in hours
+        interval = df_aux['StartTime'].diff().mode().dt.total_seconds().values[0] / 3600
 
-        interval = df_aux['StartTime'].diff().mode().dt.total_seconds().values[0] / 3600  # Convertir a horas
+        # Determine units
+        units = df_aux.UnitName.iloc[0] if len(df_aux['UnitName'].unique()) == 1 else "Varying"
 
-        units = df_aux.UnitName[0] if len(np.unique(df_aux.UnitName)) == 1 else "Varying"
+        # Extract first and last observation timestamps
+        first_obs = df_aux['StartTime'].iloc[0]
+        last_obs = df_aux['StartTime'].iloc[-1]
 
-        first_obs = df_aux.StartTime[0]
-
-        last_obs = df_aux.StartTime[len(df_aux.StartTime)-1]
-
-        value_col = "quantity" if files[i].startswith('gen') else "Load"
+        # Define the column based on the file name and count NaNs
+        value_col = "quantity" if file.startswith('gen') else "Load"
         nans = df_aux[value_col].isnull().sum()
 
-        new_row = [files[i], files[i].split("_")[1][:2], interval, units, first_obs, last_obs, nans]
+        # Create a new row with metadata information
+        new_row = [file, file.split("_")[1][:2], interval, units, first_obs, last_obs, nans]
 
+        # Append the new row to the metadata DataFrame
         meta_df.loc[len(meta_df)] = new_row
+
+    # Display dataset diagnostic table
     print("\nDATASET DIAGNOSTIC TABLE:")
     print(meta_df)
     return meta_df
 
-def eval_meta_df(meta_df):
+
+
+def check_data_consistency(meta_df):
+    """
+    Check for inconsistencies in the given DataFrame columns and print warnings if found.
+
+    Args:
+    meta_df (pandas.DataFrame): DataFrame containing metadata.
+
+    Returns:
+    None
+    """
+
     warnings = []
 
-    # Verificar si hay diferentes valores en la columna 'units'
+    # Check for differing units in the 'units' column
     if meta_df['units'].nunique() > 1:
-        warnings.append("\nWARNING: There are differing units in the data")
+        warnings.append("WARNING: There are differing units in the data")
+
+    # Check for differing time intervals in the 'interval' column
     if meta_df['interval'].nunique() > 1:
-        warnings.append("\nWARNING: There are differing time intervals in the data")
+        warnings.append("WARNING: There are differing time intervals in the data")
+
+    # Check if data doesn't start on the same date across all datasets
     if meta_df['first_obs'].nunique() > 1:
-        warnings.append("\nWARNING: Data doesn't start on the same date across all datasets")
-    if meta_df['first_obs'].nunique() > 1:
-        warnings.append("\nWARNING: Data doesn't end on the same date across all datasets")
-    if len(warnings) < 1:
-        warnings.append("\nNo inconsistencies were found in the data")
-    for warn in warnings:
-        print(warn)
+        warnings.append("WARNING: Data doesn't start on the same date across all datasets")
+
+    # Check if data doesn't end on the same date across all datasets
+    if meta_df['last_obs'].nunique() > 1:
+        warnings.append("WARNING: Data doesn't end on the same date across all datasets")
+
+    # If no inconsistencies were found, add a message indicating that
+    if not warnings:
+        warnings.append("No inconsistencies were found in the data")
+
+    # Print the warnings
+    for warning in warnings:
+        print(warning)
+        
+        
         
 def interpolate_and_sum_hour(hour_data):
-    # Si todos los valores de la hora son NaN, devuelve NaN
+    """
+    Interpolates missing values in the input hour_data (if any) and returns the sum of the values.
+    
+    Args:
+    - hour_data (pd.Series): Input data for a particular hour
+    
+    Returns:
+    - float or NaN: Sum of the values after interpolation or NaN if all values are NaN
+    
+    Raises:
+    - ValueError: If the input is not a pandas Series
+    """
+    # Check if hour_data is a pandas Series
+    if not isinstance(hour_data, pd.Series):
+        raise ValueError("Input hour_data must be a pandas Series")
+    
+    # If all values of the hour are NaN, return NaN
     if hour_data.isnull().all():
         return np.nan
     
-    # Si solo algunos valores son NaN, realiza la interpolación y suma
+    # If some values are NaN, perform interpolation and return the sum
     if hour_data.notnull().any():
         interpolated_values = hour_data.interpolate()
         return interpolated_values.sum()
     
-    # Si hay al menos un valor no NaN, pero no todos, devuelve NaN
+    # If at least one value is not NaN but not all, return NaN
     return np.nan
 
+
         
-def llenar_horas_faltantes(df, region):
-    #Guardamos tipo de energia (if necessary)
-    isgen = True if "PsrType" in list(df.columns) else False
-    if isgen:
+def fill_missing_hours(df, region):
+    """
+    Fills missing hours in a DataFrame of time series data and aggregates values per hour.
+
+    Args:
+    - df (DataFrame): Input DataFrame containing time series data.
+    - region (str): Name of the region for column naming.
+
+    Returns:
+    - DataFrame: Modified DataFrame with missing hours filled and aggregated values per hour.
+    """
+    is_energy_type_present = "PsrType" in df.columns
+    if is_energy_type_present:
         energy_type = df["PsrType"][0]
     
-    # Expresión regular para extraer la fecha y hora
-    regex = r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})'
+    # Define regex to extract date and time
+    regex_datetime = r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})'
 
-    # Aplicar la expresión regular para extraer la parte relevante y convertirla a fecha y hora
-    df['StartTime'] = df['StartTime'].str.extract(regex)
+    # Extract relevant date and time, converting it to datetime format
+    df['StartTime'] = df['StartTime'].str.extract(regex_datetime)
     df['StartTime'] = pd.to_datetime(df['StartTime'], format='%Y-%m-%dT%H:%M')
     
-    # Calculamos la periodicidad en el dataset
-    periodicidad = df['StartTime'].diff().mode().dt.total_seconds().values[0] / 3600
+    # Calculate dataset periodicity
+    periodicity = df['StartTime'].diff().mode().dt.total_seconds().values[0] / 3600
     
-    #First we set start and end time
-    start = pd.to_datetime("2022-01-01 00:00:00")
-    end = pd.to_datetime("2023-01-01 00:00:00")
+    # Set start and end time
+    start_time = pd.to_datetime("2022-01-01 00:00:00")
+    end_time = pd.to_datetime("2023-01-01 00:00:00")
     
-    # Agrupar por 'StartTime' y sumar los valores en 'value_col'
+    # Group by 'StartTime' and sum values in 'value_col'
     value_col = df.columns[-1]
     df = df.groupby('StartTime')[value_col].sum().reset_index()
     
-    # Establecer 'StartTime' como índice para trabajar con series de tiempo
+    # Set 'StartTime' as index for time series operations
     df = df.set_index('StartTime')
 
-    # Crear un rango de fechas y horas esperadas con la periodicidad dada
-    rango_fechas = pd.date_range(start=start, end=end, freq=f'{periodicidad}H')
+    # Create a range of expected dates and hours based on the given periodicity
+    date_range = pd.date_range(start=start_time, end=end_time, freq=f'{periodicity}H')
 
-    # Reindexar el DataFrame con el rango de fechas y horas esperadas
-    df = df.reindex(rango_fechas).iloc[:-1]
+    # Reindex the DataFrame with the expected date and hour range, excluding the last entry
+    df = df.reindex(date_range).iloc[:-1]
     
+    # Apply an operation for filling missing values and summing values per hour
     df = df.resample('H').apply(interpolate_and_sum_hour)
 
-    # Rellenar valores faltantes en la columna 'quantity' usando interpolación
-    #df[value_col] = df[value_col].interpolate()
-
-    # Resamplear para tener un valor por hora y sumar los valores correspondientes
-    #df = pd.DataFrame(df[value_col].resample('H').sum())
-    
-    #Renombrar columna
-    if isgen:
+    # Rename columns based on region and energy type presence
+    if is_energy_type_present:
         df = df.rename(columns={df.columns[0]: f"{region}_{value_col}_{energy_type}"})
     else:
         df = df.rename(columns={df.columns[0]: f"{region}_{value_col}"})
 
     return df
 
+
+
 def create_basic_train_df(file_path):
+    """
+    Creates a basic training DataFrame by concatenating data from CSV files in the given directory.
+    
+    Args:
+    - file_path (str): The path to the directory containing CSV files.
+
+    Returns:
+    - pandas.DataFrame: The concatenated DataFrame.
+    """
     print("\nStarting preprocessing of the data:")
     print("\nGenerating basic dataset ...")
+    
+    # Get relevant CSV files for training
+    files = [file for file in os.listdir(file_path) if (file.endswith('.csv') and 'test' not in file and 'train' not in file)]
+    
+    # Initialize an empty DataFrame to store concatenated data
     train = pd.DataFrame()
-    files = [file for file in os.listdir(file_path) if (file.endswith('.csv') and not 'test' in file and not 'train' in file)]
-    for i in range(len(files)):
-        df_aux = pd.read_csv(os.path.join(file_path, files[i]))
-        region = files[i].split("_")[1][:2]
-        df_aux = llenar_horas_faltantes(df_aux, region)
-        train = pd.concat([train, df_aux], axis = 1)
-    # Obtener todas las columnas que contienen "quantity"
-    columns_to_sum = [col for col in train.columns if 'quantity' in col]
 
-    # Extraer el código de país de estas columnas
+    # Concatenate data from each CSV file into the train DataFrame
+    for file in files:
+        df_aux = pd.read_csv(os.path.join(file_path, file))
+        region = file.split("_")[1][:2]
+        
+        # Fill missing hours in the data for the given region
+        df_aux = fill_missing_hours(df_aux, region)
+        
+        # Concatenate the data horizontally
+        train = pd.concat([train, df_aux], axis=1)
+    
+    # Get columns containing 'quantity'
+    columns_to_sum = [col for col in train.columns if 'quantity' in col]
+    
+    # Extract country codes from column names
     country_codes = list(set(col.split('_')[0] for col in columns_to_sum))
     
-    # Crear las columnas de 'green_energy' para cada código de país y sumar las 'quantity' correspondientes
+    # Create 'green_energy' columns for each country code and sum corresponding 'quantity' columns
     for code in country_codes:
         quantity_columns = [col for col in columns_to_sum if col.startswith(f'{code}_')]
         train[f'{code}_green_energy'] = train[quantity_columns].sum(axis=1)
     
-    # Eliminar las columnas 'quantity' que ya han sido sumadas
+    # Remove the 'quantity' columns that have been summed
     train.drop(columns=columns_to_sum, inplace=True)
+    
     print("DONE")
     return train
 
+
+
 def handle_nans(df):
+    """
+    Handles NaN values in a DataFrame by replacing 0s with NaNs and dropping rows with any NaNs.
+    
+    Args:
+    - df (pd.DataFrame): Input DataFrame
+    
+    Returns:
+    - pd.DataFrame: DataFrame with NaN values handled
+    """
     original_length = len(df)
     df.replace(0, np.nan, inplace=True)
     df.dropna(how='any', inplace=True)
@@ -159,88 +259,133 @@ def handle_nans(df):
     
     return df
 
+
+
 def handle_outliers(df):
+    """
+    Handles outliers in a DataFrame using z-score method for each column.
+    Outliers are identified and replaced with interpolated values based on the percentage of outliers.
+    
+    Args:
+    - df (pd.DataFrame): Input DataFrame
+    
+    Returns:
+    - pd.DataFrame: DataFrame with outliers handled
+    """
     for column in df.columns:
-        outliers = np.abs(stats.zscore(df[column]))
-        outlier_percentage = np.sum(outliers > 3) / len(outliers)  # Conteo de valores con z-score > 3
+        z_scores = np.abs(stats.zscore(df[column]))
+        outlier_percentage = np.sum(z_scores > 3) / len(z_scores)  # Percentage of values with z-score > 3
         
         if outlier_percentage < 0.02:
-            continue  # Menos del 2% de outliers, no hacer nada
+            continue  # Less than 2% outliers, do nothing
             
         elif 0.02 <= outlier_percentage <= 0.1:
-            # Reemplazar outliers con valores interpolados en ambas direcciones
-            df[column] = df[column].mask(outliers > 3).interpolate(limit_direction='both')
+            # Replace outliers with interpolated values in both directions
+            df[column] = df[column].mask(z_scores > 3).interpolate(limit_direction='both')
             
         else:
-            # Superan el 10%, reemplazar con valores interpolados y mostrar un warning
-            df[column] = df[column].mask(outliers > 3).interpolate(limit_direction='both')
+            # More than 10% outliers, replace with interpolated values and display a warning
+            df[column] = df[column].mask(z_scores > 3).interpolate(limit_direction='both')
             print(f"\nWARNING: {column} has more than 10% outliers.")
     
     return df
     
 def add_surplus(train):
-    print("\nAdding target variable...")
-    country_codes = list(set(col.split('_')[0] for col in train.columns if '_' in col))
+    """
+    Calculate surplus for each country based on green energy and load columns.
 
-    # Iterar sobre los identificadores de países y calcular el 'surplus'
+    Args:
+    - train (DataFrame): Input DataFrame containing columns related to energy data.
+
+    Returns:
+    - train (DataFrame): DataFrame with surplus columns added for each country.
+    """
+    print("\nCalculating surplus...")
+    
+    # Extract unique country codes from column names
+    country_codes = {col.split('_')[0] for col in train.columns if '_' in col}
+
+    # Calculate surplus for each country
     for code in country_codes:
         green_energy_col = f'{code}_green_energy'
         load_col = f'{code}_Load'
         surplus_col = f'{code}_surplus'
 
-        # Calcular el 'surplus' restando 'green_energy' - 'Load'
+        # Calculate surplus by subtracting load from green energy
         train[surplus_col] = train[green_energy_col] - train[load_col]
+    
     return train
+
+
 
 def add_target(train):
+    """
+    Add target column based on surplus values and shift it for predictions.
+
+    Args:
+    - train (DataFrame): Input DataFrame containing surplus data.
+
+    Returns:
+    - train (DataFrame): DataFrame with 'target' column added and shifted.
+    """
     train['target'] = train.filter(like='_surplus').idxmax(axis=1).str[:2]
     
-    # We need to shift the target column to reflect the reality of the predictions
+    # Shift the target column to reflect prediction reality
     train['target'] = train['target'].shift(periods=-1)
-    print("DONE")
-
+    
+    print("Target column added and shifted.")
     return train
 
+
+
 def feature_eng(df):
+    """
+    Perform feature engineering on the input DataFrame.
+
+    Parameters:
+    df (pd.DataFrame): Input DataFrame containing target and numeric columns.
+
+    Returns:
+    pd.DataFrame: Processed DataFrame with engineered features.
+    """
+
+    # Identify numeric columns excluding the target column
     numeric_columns = [col for col in df.columns if col != 'target' and np.issubdtype(df[col].dtype, np.number)]
 
-    # Generar los lags para las columnas numéricas
+    # Generate lagged columns for numeric features
     lags = [1, 2, 3, 24]
-    lag_columns = []
-    for col in numeric_columns:
-        for lag in lags:
-            lag_columns.append(df[col].shift(lag).rename(f"{col}_lag_{lag}"))
+    lag_columns = [df[col].shift(lag).rename(f"{col}_lag_{lag}") for col in numeric_columns for lag in lags]
 
+    # Create lagged columns for the target variable
     target_lag_columns = [df["target"].shift(lag).rename(f"target_lag_{lag}") for lag in lags]
 
+    # Concatenate lagged columns with the original DataFrame
     df = pd.concat([df] + lag_columns + target_lag_columns, axis=1)
 
-    # Calcula la media acumulativa por día para cada columna numérica
+    # Calculate daily and monthly cumulative means for numeric columns
     daily_means = df[numeric_columns].groupby(df.index.date).expanding().mean().reset_index(level=0, drop=True)
-
-    # Calcula la media acumulativa por mes para cada columna numérica
     monthly_means = df[numeric_columns].groupby(df.index.to_period('M')).expanding().mean().reset_index(level=0, drop=True)
 
-    # Une las medias diarias y mensuales al DataFrame original
+    # Merge daily and monthly means with the original DataFrame
     df = df.join(daily_means.add_suffix('_daily_mean')).join(monthly_means.add_suffix('_monthly_mean'))
 
-    # Feature extraction de la variable tiempo
+    # Extract temporal features: month, day, hour
     df['month'] = df.index.month
     df['day'] = df.index.day
     df['hour'] = df.index.hour
 
-    # Definir las columnas y sus correspondientes funciones trigonométricas
+    # Define columns and corresponding trigonometric functions
     time_columns = [('hour', 24), ('day', 30), ('month', 12)]
 
-    # Iterar a través de las columnas y aplicar las transformaciones trigonométricas
+    # Apply trigonometric transformations to temporal columns
     for column, period in time_columns:
         df[f'sin_{column}'] = np.sin(2 * np.pi * df[column] / period)
         df[f'cos_{column}'] = np.cos(2 * np.pi * df[column] / period)
 
-    # Eliminar las columnas originales si es necesario
+    # Drop original temporal columns
     df = df.drop(columns=[column for column, _ in time_columns])
-    
-    # Mapear las columnas de target
+
+    # Map target columns according to predefined dictionary
     mapping_dict = {
         'SP': 0, 'UK': 1, 'DE': 2, 'DK': 3, 'HU': 5,
         'SE': 4, 'IT': 6, 'PO': 7, 'NL': 8
@@ -249,8 +394,10 @@ def feature_eng(df):
     columns_to_map = [col for col in df.columns if "target" in col]
     for col in columns_to_map:
         df[col] = df[col].replace(mapping_dict)
-        
+
     return df
+
+
 
 def reduce_mem_usage(df):
     """ iterate through all the columns of a dataframe and modify the data type
@@ -291,19 +438,28 @@ def reduce_mem_usage(df):
     return df
 
 def select_features(df):
-    # Supongamos que tienes un DataFrame df con características predictoras y la columna 'target'
-    # Separar las características y la columna objetivo
+    """
+    Selects the most important features using LightGBM and XGBoost.
+
+    Parameters:
+    df (pd.DataFrame): DataFrame containing predictor features and the 'target' column.
+
+    Returns:
+    list: List of selected features including the 'target'.
+    """
+
+    # Separate predictor features and the target column
     X = df.drop('target', axis=1)
     y = df['target']
 
-    # Número de veces para realizar la validación cruzada
+    # Number of iterations for cross-validation
     n_iterations = 5
 
-    # Almacenar las importancias de características de cada iteración
+    # Store feature importances for each iteration
     all_lgb_importances = []
     all_xgb_importances = []
 
-    # Dividir los datos en conjunto de entrenamiento y prueba para la validación cruzada
+    # Split data into training and test sets for cross-validation
     kf = KFold(n_splits=n_iterations, shuffle=True, random_state=42)
 
     for train_idx, test_idx in kf.split(X):
@@ -323,18 +479,18 @@ def select_features(df):
         all_lgb_importances.append(lgb_feature_importance)
         all_xgb_importances.append(xgb_feature_importance)
 
-    # Calcular la importancia media de las características de LightGBM y XGBoost
+    # Calculate mean feature importance for LightGBM and XGBoost
     mean_lgb_importance = pd.concat(all_lgb_importances, axis=1).mean(axis=1).sort_values(ascending=False)
     mean_xgb_importance = pd.concat(all_xgb_importances, axis=1).mean(axis=1).sort_values(ascending=False)
 
-    # Seleccionar las características con mayor importancia
-    num_features_to_select = 25  # Número de características a seleccionar
+    # Select features with highest importance
+    num_features_to_select = 25  # Number of features to select
     intercalated_vars = [val for pair in zip(mean_lgb_importance.index.values, mean_xgb_importance.index.values) for val in pair]
-    # Eliminar duplicados manteniendo el orden
+    # Remove duplicates while preserving order
     seen = set()
-    selected_features = [x for x in intercalated_vars if not (x in seen or seen.add(x))][:25]
+    selected_features = [x for x in intercalated_vars if not (x in seen or seen.add(x))][:num_features_to_select]
     selected_features.append("target")
-    
+
     return selected_features
 
 def save_data(train, output_file):
@@ -358,17 +514,31 @@ def parse_arguments():
     return parser.parse_args()
 
 def main(file_path, output_path):
-    meta_df = create_meta_df(file_path)    # comment if not needed
-    eval_meta_df(meta_df)                  # comment if not needed   (they're for diagnostic purposes)
-    train = create_basic_train_df(file_path)   # creates basic training info with strictly necessary info
-    train = handle_nans(train)      # adds surplus for each country and the target variable
+    # Load metadata if required
+    meta_df = create_meta_df(file_path)  # Commented out if metadata not needed
+    check_data_consistency(meta_df)  # Commented out if not required for diagnostics
+
+    # Create a basic training dataset with essential information
+    train = create_basic_train_df(file_path)
+
+    # Handling missing values and outliers
+    train = handle_nans(train)  # Add surplus for each country and the target variable
     train = handle_outliers(train)
+    
+    # Feature engineering
     train = add_surplus(train)
     train = add_target(train)
     train = feature_eng(train)
+    
+    # Optimize memory usage
     train = reduce_mem_usage(train)
-    train = train[select_features(train[:int(train.shape[0]*0.8)])]
+    
+    # Select important features and trim the dataset
+    train = train[select_features(train[:int(train.shape[0] * 0.8)])]
+    
+    # Save processed data
     save_data(train, output_path)
+    
     print("\nPreprocessing finished.")
 
 if __name__ == "__main__":

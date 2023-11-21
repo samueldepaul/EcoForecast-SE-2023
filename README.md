@@ -20,10 +20,19 @@ The problem was tackled by building a robust pipeline composed of the following 
 
 Let's delve into a general overview of each phase:
 ### Data Ingestion:
-    - The ENTSO-E API was used for data ingestion.
-    - Functions in utils.py were modified to introduce a 2-second delay between API calls to avoid exceeding call limits.
-    - Data was ingested for specific PsrType values, filtering information related to green/renewable energies.
-    - We generated data within the required timeframe as per the instructions: from 2022-01-01 to 2023-01-01.
+  - The ENTSO-E API was used for data ingestion.
+  - Functions in utils.py were modified to introduce a 2-second delay between API calls to avoid exceeding call limits.
+  - Data was ingested for specific PsrType values, filtering information related to green/renewable energies.
+  - We generated data within the required timeframe as per the instructions: from 2022-01-01 to 2023-01-01.
+
+#### Data Processing:
+  - Two optional functions were created to enable users to perform an initial diagnosis with specific information on the datasets just ingested using the API.
+  - A custom interpolation function was developed to only interpolate intra-hourly values when there is at least one observation per hour. In such cases, bidirectional interpolation was performed, as set by the organizers.
+  - A function was implemented to perform hourly resampling of data with finer periodicity based on their original periodicity.
+  - A basic dataframe with essential information was constructed, handling NANs and outliers automatically. However, a significant number of warnings are displayed if necessary.
+  - Feature engineering was conducted, considering variables with lags of 1, 2, 3, and 24 hours, monthly and daily grouped variables, and trigonometric transformations (sin, cos) of the date.
+  - Before proceeding to computationally intensive tasks like feature selection or model training, a memory reduction of the dataset was executed by efficiently managing data types, resulting in a 66% size reduction.
+  - Finally, the 25 most relevant features were selected through a process based on model feature importance, specifically leveraging 5 iterations of feature_importance from LGBM and XGBoost models.
 
 <p align="center">
   <img src="https://github.com/samueldepaul/EcoForecast-SE-2023/blob/main/imgs/3.jpg?raw=true"/>

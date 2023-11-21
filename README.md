@@ -55,7 +55,6 @@ Let's delve into a general overview of each phase:
   <img src="https://github.com/samueldepaul/EcoForecast-SE-2023/blob/main/imgs/4.jpg?raw=true"/>
 </p>
 
-#### Code Structure and Data Cleaning:
   - The code is written with a focus on efficiency, ease of maintenance, and recyclability for future projects. Functions created are extensively documented and commented for good readability, ensuring anyone can understand their functionality. Moreover, warnings are generated throughout the code to provide users with insights into potential issues in their data or models.
   
   - When cleaning the data, the decision was made to exclude UK data for several reasons:

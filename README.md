@@ -25,7 +25,7 @@ Let's delve into a general overview of each phase:
   - Data was ingested for specific PsrType values, filtering information related to green/renewable energies.
   - We generated data within the required timeframe as per the instructions: from 2022-01-01 to 2023-01-01.
 
-#### Data Processing:
+### Data Processing:
   - Two optional functions were created to enable users to perform an initial diagnosis with specific information on the datasets just ingested using the API.
   - A custom interpolation function was developed to only interpolate intra-hourly values when there is at least one observation per hour. In such cases, bidirectional interpolation was performed, as set by the organizers.
   - A function was implemented to perform hourly resampling of data with finer periodicity based on their original periodicity.

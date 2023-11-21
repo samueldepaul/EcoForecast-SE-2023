@@ -2,6 +2,23 @@
   <img src="https://github.com/samueldepaul/EcoForecast-SE-2023/blob/main/imgs/1.jpg?raw=true"/>
 </p>
 
+<p align="center">
+  <img src="https://github.com/samueldepaul/EcoForecast-SE-2023/blob/main/imgs/2.jpg?raw=true"/>
+</p>
+
+<p align="center">
+  <img src="https://github.com/samueldepaul/EcoForecast-SE-2023/blob/main/imgs/3.jpg?raw=true"/>
+</p>
+
+<p align="center">
+  <img src="https://github.com/samueldepaul/EcoForecast-SE-2023/blob/main/imgs/4.jpg?raw=true"/>
+</p>
+
+
+
+
+
+
 # Repositorio de la WebApp Vendimia360
 
 ## Link a la WebApp:

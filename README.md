@@ -38,6 +38,19 @@ Let's delve into a general overview of each phase:
   - Before proceeding to computationally intensive tasks like feature selection or model training, a memory reduction of the dataset was executed by efficiently managing data types, resulting in a 66% size reduction.
   - Finally, the 25 most relevant features were selected through a process based on model feature importance, specifically leveraging 5 iterations of feature_importance from LGBM and XGBoost models.
 
+### Model Training:
+  - The problem is framed as a tabular data classification problem. We did not utilize any recursive deep learning algorithms or ARIMA. Current state-of-the-art suggests that ensemble models based on gradient boosting (like LGBM and XGBoost), contrary to intuition, perform better in these tasks than ARIMA or RNN models.
+  - As the problem seems relatively straightforward (due to limited data variability and most countries not usually having any surplus of renewable energies), before fitting any models, we conducted a baseline prediction. This involved predicting that the country with the highest surplus of green energies in the next hour would be the same as the one in the previous hour.
+  - The split used for train-test division is 80-20, as recommended by the organizers.
+  - For ML model training, we performed hyperparameter tuning using k = 7-fold cross-validation. Generally, the models performed well on the test set and showed no signs of overfitting.
+  - The best model with the optimal hyperparameters is saved in .pkl format for use in a later phase.
+
+### Surplus Prediction:
+  - We generated predictions for both the baseline model and the best ML model.
+  - Promising metrics were obtained in both cases.
+  - Comparing the predictions, we noticed they were very similar, suggesting that the simpler solution might be more suitable for solving this problem.
+  - Predictions were saved in a JSON file in the format specified by the organizers.
+
 <p align="center">
   <img src="https://github.com/samueldepaul/EcoForecast-SE-2023/blob/main/imgs/4.jpg?raw=true"/>
 </p>

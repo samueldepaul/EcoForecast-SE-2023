@@ -1,8 +1,23 @@
-# SE-Europe-Data_Challenge_Template
-Template repository to work with for the NUWE - Schneider Electric European Data Science Challenge in November 2023.
+<p align="center">
+  <img src="https://github.com/samueldepaul/EcoForecast-SE-2023/blob/main/imgs/1.jpg?raw=true"/>
+</p>
 
-# Tokens:
-- b5b8c21b-a637-4e17-a8fe-0d39a16aa849
-- fb81432a-3853-4c30-a105-117c86a433ca
-- 2334f370-0c85-405e-bb90-c022445bd273
-- 1d9cd4bd-f8aa-476c-8cc1-3442dc91506d
+# Repositorio de la WebApp Vendimia360
+
+## Link a la WebApp:
+Clicando aquí puede accederse a la plataforma :  https://vendimia360.streamlit.app/
+
+
+##  Secciones de Vendimia 360:
+
+### Home
+![](https://github.com/samueldepaul/Vendimia360_webapp/blob/main/img_readme/home.gif?raw=true)
+
+### Base de Datos
+![](https://github.com/samueldepaul/Vendimia360_webapp/blob/main/img_readme/base_de_datos.gif?raw=true)
+
+### Predicción
+##### Subiendo un CSV con información de múltiples fincas:
+![](https://github.com/samueldepaul/Vendimia360_webapp/blob/main/img_readme/prediccion_csv.gif?raw=true)
+##### Introduciendo la información de una finca manualmente:
+![](https://github.com/samueldepaul/Vendimia360_webapp/blob/main/img_readme/prediccion_manual.gif?raw=true)

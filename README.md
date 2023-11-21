@@ -12,6 +12,19 @@ Explore my solution to this challenge below. I hope you find it engaging and rec
   <img src="https://github.com/samueldepaul/EcoForecast-SE-2023/blob/main/imgs/2.jpg?raw=true"/>
 </p>
 
+The problem was tackled by building a robust pipeline composed of the following stages:
+- Data Ingestion
+- Data Processing
+- Model Training
+- Prediction Generation
+
+Let's delve into a general overview of each phase:
+### Data Ingestion:
+    - The ENTSO-E API was used for data ingestion.
+    - Functions in utils.py were modified to introduce a 2-second delay between API calls to avoid exceeding call limits.
+    - Data was ingested for specific PsrType values, filtering information related to green/renewable energies.
+    - We generated data within the required timeframe as per the instructions: from 2022-01-01 to 2023-01-01.
+
 <p align="center">
   <img src="https://github.com/samueldepaul/EcoForecast-SE-2023/blob/main/imgs/3.jpg?raw=true"/>
 </p>

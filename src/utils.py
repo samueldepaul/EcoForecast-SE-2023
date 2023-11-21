@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 import xml.etree.ElementTree as ET
 import pandas as pd
 from datetime import datetime, timedelta
+import time
 
 def xml_to_gen_data(xml_data) -> dict:
     """
@@ -116,6 +117,7 @@ def make_url(base_url, params):
 def perform_get_request(base_url, params):
     url = make_url(base_url, params)
     response = requests.get(url)
+    time.sleep(2)  # Pausa de 2 segundos entre llamadas a la API
     if response.status_code == 200:
         return response.text
     else:

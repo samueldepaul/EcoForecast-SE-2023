@@ -12,6 +12,9 @@ Given data on the energy consumption of 9 European countries and their generatio
 
 Explore my solution to this challenge below. I hope you find it engaging and recognize the considerable effort I've invested over the past few days.
 
+To run the whole pipeline at once, access the main folder of your local clone of the repository (using cd) and type:
+./scripts/run_data_pipeline.sh 2022-01-01 2023-01-01 data/ data/ models/ predictions/
+
 <p align="center">
   <img src="https://github.com/samueldepaul/EcoForecast-SE-2023/blob/main/imgs/3.jpg?raw=true"/>
 </p>
